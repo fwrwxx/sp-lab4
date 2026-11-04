@@ -2,4 +2,5 @@
 version = 1
 firmware = 'firmware/build/firmware.hex'
 elf = 'firmware/build/firmware.elf'
-vcdFile = 'docs/captures/wokwi-logic.vcd'
+vcdFile = 'docs/captures/lab3.vcd'
+rfc2217ServerPort = 4000

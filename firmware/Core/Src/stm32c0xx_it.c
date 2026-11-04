@@ -141,5 +141,40 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
+extern void cmd_rx_byte(uint8_t b);
+extern void tasks_on_button_isr(void);
+extern void perf_on_tim_overflow(void);
+extern TIM_HandleTypeDef htim3;          /* NEW */
 
+void USART2_IRQHandler(void)
+{
+    if (USART2->ISR & USART_ISR_RXNE_RXFNE) {
+        uint8_t b = (uint8_t)(USART2->RDR & 0xFF);
+        cmd_rx_byte(b);
+    }
+}
+
+void EXTI4_15_IRQHandler(void)
+{
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == GPIO_PIN_13) {
+        tasks_on_button_isr();
+    }
+}
+
+void TIM3_IRQHandler(void)
+{
+    HAL_TIM_IRQHandler(&htim3);
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if (htim->Instance == TIM3) {
+        perf_on_tim_overflow();
+    }
+}
 /* USER CODE END 1 */

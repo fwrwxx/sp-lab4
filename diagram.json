@@ -9,13 +9,14 @@
     { "type": "wokwi-lcd1602", "id": "lcd1", "top": -180, "left": 400, "attrs": { "pins": "i2c" } },
     { "type": "wokwi-servo", "id": "servo1", "top": 120, "left": 200, "attrs": { "horn": "double", "hornColor": "#0000FF" } },
     { "type": "wokwi-25lc256", "id": "eeprom1", "top": 150, "left": -200, "attrs": {} },
+    { "type": "wokwi-pushbutton", "id": "btn1", "top": -100, "left": 600, "attrs": { "color": "green", "label": "USER" } },
     {
       "type": "wokwi-logic-analyzer",
       "id": "logic1",
       "top": 400,
       "left": 0,
       "attrs": {
-        "channelNames": "I2C_SCL,I2C_SDA,SPI_SCK,SPI_MOSI,SPI_MISO,SPI_CS,UART_TX,PWM"
+        "channelNames": "PROBE_IMU,PROBE_LONG,PROBE_BTN,EXTI_ISR,SPI_CS,UART_TX,BTN_RAW,PWM"
       }
     }
   ],
@@ -45,16 +46,19 @@
     [ "nucleo:PA11", "eeprom1:SO", "gray", [ "v0" ] ],
     [ "nucleo:PB6", "eeprom1:CS", "purple", [ "v0" ] ],
 
+    [ "nucleo:PC13", "btn1:1.l", "green", [ "v0" ] ],
+    [ "btn1:2.l", "nucleo:GND", "black", [ "v0" ] ],
+
     [ "nucleo:PA2", "$serialMonitor:RX", "", [] ],
     [ "nucleo:PA3", "$serialMonitor:TX", "", [] ],
 
-    [ "logic1:D0", "nucleo:PB8", "green", [] ],
-    [ "logic1:D1", "nucleo:PB9", "blue", [] ],
-    [ "logic1:D2", "nucleo:PA5", "yellow", [] ],
-    [ "logic1:D3", "nucleo:PA7", "orange", [] ],
-    [ "logic1:D4", "nucleo:PA11", "purple", [] ],
-    [ "logic1:D5", "nucleo:PB6", "gray", [] ],
-    [ "logic1:D6", "nucleo:PA2", "white", [] ],
+    [ "logic1:D0", "nucleo:PA8", "cyan", [] ],
+    [ "logic1:D1", "nucleo:PA9", "magenta", [] ],
+    [ "logic1:D2", "nucleo:PA10", "orange", [] ],
+    [ "logic1:D3", "nucleo:PC13", "red", [] ],
+    [ "logic1:D4", "nucleo:PB6", "gray", [] ],
+    [ "logic1:D5", "nucleo:PA2", "white", [] ],
+    [ "logic1:D6", "nucleo:PC13", "green", [] ],
     [ "logic1:D7", "nucleo:PB0", "red", [] ]
   ],
   "dependencies": {}

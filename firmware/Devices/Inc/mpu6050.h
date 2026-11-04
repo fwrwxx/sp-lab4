@@ -13,6 +13,7 @@ typedef struct {
 
 bus_status_t MPU6050_Init(mpu6050_t *dev);
 bus_status_t MPU6050_ReadAccelX(mpu6050_t *dev, int16_t *raw);
+bus_status_t MPU6050_ReadAccelXYZ(mpu6050_t *dev, int16_t *ax, int16_t *ay, int16_t *az);
 float MPU6050_AccelRawToG(int16_t raw);
 
 #endif

@@ -1,0 +1,23 @@
+OK RESET
+OK LONG
+STAT name=imu n=826 min_us=8341 avg_us=8351 max_us=8817
+STAT name=flash_log n=827 min_us=11 avg_us=21 max_us=8283
+STAT name=uart_cmd n=827 min_us=6 avg_us=106 max_us=81360
+STAT name=long_op n=1 min_us=80424 avg_us=80424 max_us=80424
+STAT name=lcd n=827 min_us=11 avg_us=11 max_us=14
+STAT name=loop n=827 min_us=8424 avg_us=8544 max_us=89809
+IMU jitter_min_us=3442 jitter_max_us=84826 missed=2
+STAT name=imu n=1909 min_us=8341 avg_us=8355 max_us=8854
+STAT name=flash_log n=1909 min_us=11 avg_us=24 max_us=8283
+STAT name=uart_cmd n=1909 min_us=6 avg_us=49 max_us=81360
+STAT name=long_op n=1 min_us=80424 avg_us=80424 max_us=80424
+STAT name=lcd n=1909 min_us=11 avg_us=22 max_us=20011
+STAT name=loop n=1909 min_us=8424 avg_us=8495 max_us=89809
+IMU jitter_min_us=3442 jitter_max_us=84826 missed=5
+STAT name=imu n=1996 min_us=8341 avg_us=8355 max_us=8854
+STAT name=flash_log n=1997 min_us=11 avg_us=23 max_us=8283
+STAT name=uart_cmd n=1997 min_us=6 avg_us=71 max_us=81360
+STAT name=long_op n=1 min_us=80424 avg_us=80424 max_us=80424
+STAT name=lcd n=1997 min_us=11 avg_us=21 max_us=20011
+STAT name=loop n=1997 min_us=8424 avg_us=8515 max_us=89809
+IMU jitter_min_us=3442 jitter_max_us=84826 missed=6

@@ -1,6 +1,6 @@
 #include "app.h"
 #include "perf.h"
-#include "tasks.h"
+#include "app_tasks.h"
 #include "cmd.h"
 #include "main.h"
 #include <stdio.h>

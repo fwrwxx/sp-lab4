@@ -1,8 +1,9 @@
-#include "tasks.h"
+#include "app_tasks.h"
 #include "bus.h"
 #include "mpu6050.h"
 #include "w25q64.h"
 #include "main.h"
+#include "rtos_tasks.h" /* Щоб бачити uart_puts та uart_put_u32 */
 #include <stdio.h>
 #include <string.h>
 
@@ -26,7 +27,7 @@ static int32_t  imu_jitter_min = 0x7FFFFFFF;
 static int32_t  imu_jitter_max = -0x7FFFFFFF;
 static uint32_t imu_missed;
 
-/* --- Службові probe-піни для Logic Analyzer --- */
+/* --- Службові probe-піни --- */
 #define PROBE_IMU_ON()  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,  GPIO_PIN_SET)
 #define PROBE_IMU_OFF() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,  GPIO_PIN_RESET)
 #define PROBE_LONG_ON() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9,  GPIO_PIN_SET)
@@ -36,7 +37,6 @@ static uint32_t imu_missed;
 
 void tasks_init(void)
 {
-    /* Probe-піни */
     GPIO_InitTypeDef g = {0};
     __HAL_RCC_GPIOA_CLK_ENABLE();
     g.Pin = GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10;
@@ -55,7 +55,6 @@ void tasks_on_button_isr(void)
     PROBE_BTN_ON();
 }
 
-/* --- IMU --- */
 void imu_task(void)
 {
     uint32_t now = perf_now();
@@ -75,7 +74,6 @@ void imu_task(void)
     (void)ax; (void)ay; (void)az;
 }
 
-/* --- Кнопка: latency від ISR до початку реакції --- */
 void button_task(void)
 {
     if (!btn_pending) return;
@@ -83,19 +81,14 @@ void button_task(void)
     uint32_t latency = perf_now() - btn_t_event;
     perf_add(&st_btn_latency, latency);
     PROBE_BTN_OFF();
-
-    /* Реакція: старт довгої операції (демонстрація блокування super loop) */
-    if (!long_op_active) long_op_start();
 }
 
-/* --- UART команди: неблокуючий, реальна робота в ISR --- */
 void uart_cmd_task(void)
 {
     extern void cmd_poll(void);
     cmd_poll();
 }
 
-/* --- Flash-журнал: раз на 5 с --- */
 void flash_log_task(void)
 {
     uint32_t now = perf_now();
@@ -104,68 +97,66 @@ void flash_log_task(void)
 
     uint8_t jedec[3];
     W25Q64_ReadJedec(jedec);
-    /* Приклад запису одного байта в адресу 0x0010 */
     static uint16_t addr = 0x0010;
     W25Q64_WriteByte(addr, (uint8_t)(now & 0xFF));
     addr++;
     if (addr > 0x00FF) addr = 0x0010;
 }
 
-/* --- Довга операція: навмисно блокуюча, ~50–100 мс --- */
 void long_op_start(void)
 {
     if (long_op_active) return;
     long_op_active = 1;
 
-    uint32_t t0 = perf_now();
+    uint32_t t1 = perf_now();
     PROBE_LONG_ON();
 
-    /* Читання JEDEC-байтів дає реалістичну SPI-транзакцію,
-     * але замало часу для «довгої». Тому додаємо шину-затримку. */
     for (volatile uint32_t i = 0; i < 40000; i++) { __NOP(); }
 
     uint8_t jedec[3];
     W25Q64_ReadJedec(jedec);
 
     PROBE_LONG_OFF();
-    perf_add(&st_long_op, perf_now() - t0);
+    perf_add(&st_long_op, perf_now() - t1);
     long_op_active = 0;
 }
 
 uint8_t long_op_busy(void) { return long_op_active; }
 
-/* --- LCD: раз на 500 мс --- */
 void lcd_task(void)
 {
     uint32_t now = perf_now();
     if (lcd_t_prev && (perf_cycles_to_us(now - lcd_t_prev) < 500000u)) return;
     lcd_t_prev = now;
-    /* lcd_update(...); — якщо у вас є, викличте тут */
 }
 
-/* --- Друк статистики --- */
-static void print_stat(const perf_stat_t *s)
+/* --- Переписано без важкого printf --- */
+void print_stat_func(const perf_stat_t *s)
 {
     if (!s->count) return;
-    printf("STAT name=%s n=%lu min_us=%lu avg_us=%lu max_us=%lu\r\n",
-           s->name, (unsigned long)s->count,
-           (unsigned long)perf_cycles_to_us(s->min),
-           (unsigned long)perf_avg_us(s),
-           (unsigned long)perf_cycles_to_us(s->max));
+    uart_puts("STAT name=");
+    uart_puts(s->name);
+    uart_puts(" n="); uart_put_u32((uint32_t)s->count);
+    uart_puts(" min_us="); uart_put_u32(perf_cycles_to_us(s->min));
+    uart_puts(" avg_us="); uart_put_u32(perf_avg_us(s));
+    uart_puts(" max_us="); uart_put_u32(perf_cycles_to_us(s->max));
+    uart_puts("\r\n");
 }
 
 void tasks_print_stats(void)
 {
-    print_stat(&st_imu);
-    print_stat(&st_btn_latency);
-    print_stat(&st_flash_log);
-    print_stat(&st_uart_cmd);
-    print_stat(&st_long_op);
-    print_stat(&st_lcd);
-    print_stat(&st_loop);
-    printf("IMU jitter_min_us=%ld jitter_max_us=%ld missed=%lu\r\n",
-           (long)imu_jitter_min, (long)imu_jitter_max,
-           (unsigned long)imu_missed);
+    print_stat_func(&st_imu);
+    print_stat_func(&st_btn_latency);
+    print_stat_func(&st_flash_log);
+    print_stat_func(&st_uart_cmd);
+    print_stat_func(&st_long_op);
+    print_stat_func(&st_lcd);
+    print_stat_func(&st_loop);
+    
+    uart_puts("IMU jitter_min_us="); uart_put_u32((uint32_t)imu_jitter_min);
+    uart_puts(" jitter_max_us="); uart_put_u32((uint32_t)imu_jitter_max);
+    uart_puts(" missed="); uart_put_u32(imu_missed);
+    uart_puts("\r\n");
 }
 
 void tasks_reset_stats(void)

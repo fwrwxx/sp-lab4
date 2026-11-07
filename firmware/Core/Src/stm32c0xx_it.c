@@ -2,17 +2,7 @@
 /**
   ******************************************************************************
   * @file    stm32c0xx_it.c
-  * @brief   Interrupt Service Routines.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
+  * @brief   Interrupt Service Routines (Lab 4: FreeRTOS)
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -22,6 +12,10 @@
 #include "stm32c0xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "FreeRTOS.h"
+#include "task.h"
+#include "app_tasks.h"
+#include "rtos_tasks.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,19 +51,17 @@
 /* External variables --------------------------------------------------------*/
 
 /* USER CODE BEGIN EV */
-
+extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim14;
+extern void perf_on_tim_overflow(void);
 /* USER CODE END EV */
 
 /******************************************************************************/
 /*           Cortex Processor Interruption and Exception Handlers          */
 /******************************************************************************/
-/**
-  * @brief This function handles Non maskable interrupt.
-  */
 void NMI_Handler(void)
 {
   /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
-
   /* USER CODE END NonMaskableInt_IRQn 0 */
   /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
    while (1)
@@ -78,13 +70,9 @@ void NMI_Handler(void)
   /* USER CODE END NonMaskableInt_IRQn 1 */
 }
 
-/**
-  * @brief This function handles Hard fault interrupt.
-  */
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -93,86 +81,52 @@ void HardFault_Handler(void)
   }
 }
 
-/**
-  * @brief This function handles System service call via SWI instruction.
-  */
-void SVC_Handler(void)
-{
-  /* USER CODE BEGIN SVC_IRQn 0 */
-
-  /* USER CODE END SVC_IRQn 0 */
-  /* USER CODE BEGIN SVC_IRQn 1 */
-
-  /* USER CODE END SVC_IRQn 1 */
-}
-
-/**
-  * @brief This function handles Pendable request for system service.
-  */
-void PendSV_Handler(void)
-{
-  /* USER CODE BEGIN PendSV_IRQn 0 */
-
-  /* USER CODE END PendSV_IRQn 0 */
-  /* USER CODE BEGIN PendSV_IRQn 1 */
-
-  /* USER CODE END PendSV_IRQn 1 */
-}
-
-/**
-  * @brief This function handles System tick timer.
-  */
-void SysTick_Handler(void)
-{
-  /* USER CODE BEGIN SysTick_IRQn 0 */
-
-  /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
-  /* USER CODE BEGIN SysTick_IRQn 1 */
-
-  /* USER CODE END SysTick_IRQn 1 */
-}
-
 /******************************************************************************/
 /* STM32C0xx Peripheral Interrupt Handlers                                    */
-/* Add here the Interrupt Handlers for the used peripherals.                  */
-/* For the available peripheral interrupt handler names,                      */
-/* please refer to the startup file (startup_stm32c0xx.s).                    */
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
-extern void cmd_rx_byte(uint8_t b);
-extern void tasks_on_button_isr(void);
-extern void perf_on_tim_overflow(void);
-extern TIM_HandleTypeDef htim3;          /* NEW */
 
+/* ---------- USART2: прийом байта -> Stream Buffer -> задача cmd ---------- */
 void USART2_IRQHandler(void)
 {
     if (USART2->ISR & USART_ISR_RXNE_RXFNE) {
         uint8_t b = (uint8_t)(USART2->RDR & 0xFF);
-        cmd_rx_byte(b);
+        Rtos_OnUartByte(b);
     }
 }
 
+/* ---------- EXTI: кнопка -> сповіщення задачі event ---------- */
 void EXTI4_15_IRQHandler(void)
 {
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
 }
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
     if (GPIO_Pin == GPIO_PIN_13) {
         tasks_on_button_isr();
+        Rtos_OnButtonISR();
     }
 }
 
+/* ---------- TIM3: PWM для серво + джерело часу run-time stats ---------- */
 void TIM3_IRQHandler(void)
 {
     HAL_TIM_IRQHandler(&htim3);
 }
 
+/* ---------- TIM14: HAL timebase (замінює SysTick для HAL) ---------- */
+void TIM14_IRQHandler(void)
+{
+    HAL_TIM_IRQHandler(&htim14);
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+    if (htim->Instance == TIM14) {
+        HAL_IncTick();
+    }
     if (htim->Instance == TIM3) {
         perf_on_tim_overflow();
     }

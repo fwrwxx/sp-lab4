@@ -1,5 +1,5 @@
-#ifndef TASKS_H
-#define TASKS_H
+#ifndef APP_TASKS_H
+#define APP_TASKS_H
 
 #include "perf.h"
 
@@ -17,8 +17,9 @@ void lcd_task(void);
 
 void long_op_start(void);
 uint8_t long_op_busy(void);
-void long_op_poll(void);   /* якщо хочете неблокуючу версію */
+void long_op_poll(void);
 
+void print_stat_func(const perf_stat_t *s);
 void tasks_print_stats(void);
 void tasks_reset_stats(void);
 int32_t tasks_imu_jitter_min(void);
